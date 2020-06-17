@@ -27,7 +27,7 @@
 #include "packet-cms.h"
 #include "packet-pkix1explicit.h"
 #include "packet-kerberos.h"
-//#include <epan\dissectors\packet-cms.c>
+ //#include <epan\dissectors\packet-cms.c>
 
 #define PNAME  "PKINIT"
 #define PSNAME "PKInit"
@@ -40,6 +40,7 @@ void proto_reg_handoff_pkinit(void);
 static int proto_pkinit = -1;
 
 static int isWin2k = 0;
+static int isPku2u = -1;
 
 /*--- Included file: packet-pkinit-hf.c ---*/
 #line 1 "./asn1/pkinit/packet-pkinit-hf.c"
@@ -101,10 +102,10 @@ static gint ett_pkinit_PA_PK_AS_REQ_Win2k = -1;
 /*--- End of included file: packet-pkinit-ett.c ---*/
 #line 36 "./asn1/pkinit/packet-pkinit-template.c"
 
-static int dissect_KerberosV5Spec2_KerberosTime(gboolean implicit_tag _U_, tvbuff_t *tvb, int offset,  asn1_ctx_t *actx, proto_tree *tree, int hf_index _U_);
-static int dissect_KerberosV5Spec2_Realm(gboolean implicit_tag _U_, tvbuff_t *tvb, int offset,  asn1_ctx_t *actx, proto_tree *tree, int hf_index _U_);
-static int dissect_KerberosV5Spec2_PrincipalName(gboolean implicit_tag _U_, tvbuff_t *tvb, int offset,  asn1_ctx_t *actx, proto_tree *tree, int hf_index _U_);
-static int dissect_pkinit_PKAuthenticator_Win2k(gboolean implicit_tag _U_, tvbuff_t *tvb _U_, int offset _U_, asn1_ctx_t *actx _U_, proto_tree *tree _U_, int hf_index _U_);
+static int dissect_KerberosV5Spec2_KerberosTime(gboolean implicit_tag _U_, tvbuff_t* tvb, int offset, asn1_ctx_t* actx, proto_tree* tree, int hf_index _U_);
+static int dissect_KerberosV5Spec2_Realm(gboolean implicit_tag _U_, tvbuff_t* tvb, int offset, asn1_ctx_t* actx, proto_tree* tree, int hf_index _U_);
+static int dissect_KerberosV5Spec2_PrincipalName(gboolean implicit_tag _U_, tvbuff_t* tvb, int offset, asn1_ctx_t* actx, proto_tree* tree, int hf_index _U_);
+static int dissect_pkinit_PKAuthenticator_Win2k(gboolean implicit_tag _U_, tvbuff_t* tvb _U_, int offset _U_, asn1_ctx_t* actx _U_, proto_tree* tree _U_, int hf_index _U_);
 
 
 /*--- Included file: packet-pkinit-fn.c ---*/
@@ -123,25 +124,25 @@ static const ber_choice_t TrustedCA_choice[] = {
 };
 
 static int
-dissect_pkinit_TrustedCA(gboolean implicit_tag _U_, tvbuff_t *tvb _U_, int offset _U_, asn1_ctx_t *actx _U_, proto_tree *tree _U_, int hf_index _U_) {
-  offset = dissect_ber_choice(actx, tree, tvb, offset,
-                                 TrustedCA_choice, hf_index, ett_pkinit_TrustedCA,
-                                 NULL);
+dissect_pkinit_TrustedCA(gboolean implicit_tag _U_, tvbuff_t* tvb _U_, int offset _U_, asn1_ctx_t* actx _U_, proto_tree* tree _U_, int hf_index _U_) {
+    offset = dissect_ber_choice(actx, tree, tvb, offset,
+        TrustedCA_choice, hf_index, ett_pkinit_TrustedCA,
+        NULL);
 
-  return offset;
+    return offset;
 }
 
 
 static const ber_sequence_t SEQUENCE_OF_TrustedCA_sequence_of[1] = {
-  { &hf_pkinit_trustedCertifiers_item, BER_CLASS_ANY/*choice*/, -1/*choice*/, BER_FLAGS_NOOWNTAG|BER_FLAGS_NOTCHKTAG, dissect_pkinit_TrustedCA },
+  { &hf_pkinit_trustedCertifiers_item, BER_CLASS_ANY/*choice*/, -1/*choice*/, BER_FLAGS_NOOWNTAG | BER_FLAGS_NOTCHKTAG, dissect_pkinit_TrustedCA },
 };
 
 static int
-dissect_pkinit_SEQUENCE_OF_TrustedCA(gboolean implicit_tag _U_, tvbuff_t *tvb _U_, int offset _U_, asn1_ctx_t *actx _U_, proto_tree *tree _U_, int hf_index _U_) {
-  offset = dissect_ber_sequence_of(implicit_tag, actx, tree, tvb, offset,
-                                      SEQUENCE_OF_TrustedCA_sequence_of, hf_index, ett_pkinit_SEQUENCE_OF_TrustedCA);
+dissect_pkinit_SEQUENCE_OF_TrustedCA(gboolean implicit_tag _U_, tvbuff_t* tvb _U_, int offset _U_, asn1_ctx_t* actx _U_, proto_tree* tree _U_, int hf_index _U_) {
+    offset = dissect_ber_sequence_of(implicit_tag, actx, tree, tvb, offset,
+        SEQUENCE_OF_TrustedCA_sequence_of, hf_index, ett_pkinit_SEQUENCE_OF_TrustedCA);
 
-  return offset;
+    return offset;
 }
 
 static const ber_sequence_t PaPkAsReq_sequence[] = {
@@ -153,50 +154,68 @@ static const ber_sequence_t PaPkAsReq_sequence[] = {
 
 
 int
-dissect_pkinit_PaPkAsReq(gboolean implicit_tag _U_, tvbuff_t *tvb _U_, int offset _U_, asn1_ctx_t *actx _U_, proto_tree *tree _U_, int hf_index _U_) {
-  isWin2k = 0;
-  offset = dissect_ber_sequence(implicit_tag, actx, tree, tvb, offset,
-      PaPkAsReq_sequence, hf_index, ett_pkinit_PaPkAsReq);
+dissect_pkinit_PaPkAsReq(gboolean implicit_tag _U_, tvbuff_t* tvb _U_, int offset _U_, asn1_ctx_t* actx _U_, proto_tree* tree _U_, int hf_index _U_) {
+    isWin2k = 0;
+    offset = dissect_ber_sequence(implicit_tag, actx, tree, tvb, offset,
+        PaPkAsReq_sequence, hf_index, ett_pkinit_PaPkAsReq);
 
-  return offset;
+    return offset;
+}
+
+static const ber_sequence_t PaPkAsReq_pku2u_sequence[] = {
+  { &hf_pkinit_signedAuthPack, BER_CLASS_CON, 0, 0, dissect_cms_SignedData },
+  { &hf_pkinit_trustedCertifiers, BER_CLASS_CON, 1, BER_FLAGS_OPTIONAL, dissect_pkinit_SEQUENCE_OF_TrustedCA },
+  { &hf_pkinit_kdcCert      , BER_CLASS_CON, 2, BER_FLAGS_OPTIONAL, dissect_cms_IssuerAndSerialNumber },
+  { NULL, 0, 0, 0, NULL }
+};
+
+int
+dissect_pkinit_PaPkAsReq_pku2u(gboolean implicit_tag _U_, tvbuff_t* tvb _U_, int offset _U_, asn1_ctx_t* actx _U_, proto_tree* tree _U_, int hf_index _U_) {
+    isWin2k = 0;
+    isPku2u = 0;
+
+    offset = dissect_ber_sequence(implicit_tag, actx, tree, tvb, offset,
+        PaPkAsReq_pku2u_sequence, hf_index, ett_pkinit_PaPkAsReq);
+
+    return offset;
 }
 
 static int
-dissect_pkinit_DHNonce(gboolean implicit_tag _U_, tvbuff_t *tvb _U_, int offset _U_, asn1_ctx_t *actx _U_, proto_tree *tree _U_, int hf_index _U_) {
-  offset = dissect_ber_octet_string(implicit_tag, actx, tree, tvb, offset, hf_index,
-                                       NULL);
+dissect_pkinit_DHNonce(gboolean implicit_tag _U_, tvbuff_t* tvb _U_, int offset _U_, asn1_ctx_t* actx _U_, proto_tree* tree _U_, int hf_index _U_) {
+    offset = dissect_ber_octet_string(implicit_tag, actx, tree, tvb, offset, hf_index,
+        NULL);
 
-  return offset;
-}
-
-
-
-static int
-dissect_pkinit_INTEGER(gboolean implicit_tag _U_, tvbuff_t *tvb _U_, int offset _U_, asn1_ctx_t *actx _U_, proto_tree *tree _U_, int hf_index _U_) {
-  offset = dissect_ber_integer(implicit_tag, actx, tree, tvb, offset, hf_index,
-                                                NULL);
-
-  return offset;
-}
-
-
-
-static int
-dissect_pkinit_INTEGER_0_4294967295(gboolean implicit_tag _U_, tvbuff_t *tvb _U_, int offset _U_, asn1_ctx_t *actx _U_, proto_tree *tree _U_, int hf_index _U_) {
-  offset = dissect_ber_integer(implicit_tag, actx, tree, tvb, offset, hf_index,
-                                                NULL);
-
-  return offset;
+    return offset;
 }
 
 
 
 static int
-dissect_pkinit_OCTET_STRING(gboolean implicit_tag _U_, tvbuff_t *tvb _U_, int offset _U_, asn1_ctx_t *actx _U_, proto_tree *tree _U_, int hf_index _U_) {
-  offset = dissect_ber_octet_string(implicit_tag, actx, tree, tvb, offset, hf_index,
-                                       NULL);
+dissect_pkinit_INTEGER(gboolean implicit_tag _U_, tvbuff_t* tvb _U_, int offset _U_, asn1_ctx_t* actx _U_, proto_tree* tree _U_, int hf_index _U_) {
+    offset = dissect_ber_integer(implicit_tag, actx, tree, tvb, offset, hf_index,
+        NULL);
 
-  return offset;
+    return offset;
+}
+
+
+
+static int
+dissect_pkinit_INTEGER_0_4294967295(gboolean implicit_tag _U_, tvbuff_t* tvb _U_, int offset _U_, asn1_ctx_t* actx _U_, proto_tree* tree _U_, int hf_index _U_) {
+    offset = dissect_ber_integer(implicit_tag, actx, tree, tvb, offset, hf_index,
+        NULL);
+
+    return offset;
+}
+
+
+
+static int
+dissect_pkinit_OCTET_STRING(gboolean implicit_tag _U_, tvbuff_t* tvb _U_, int offset _U_, asn1_ctx_t* actx _U_, proto_tree* tree _U_, int hf_index _U_) {
+    offset = dissect_ber_octet_string(implicit_tag, actx, tree, tvb, offset, hf_index,
+        NULL);
+
+    return offset;
 }
 
 
@@ -209,18 +228,18 @@ static const ber_sequence_t PKAuthenticator_sequence[] = {
 };
 
 static int
-dissect_pkinit_PKAuthenticator(gboolean implicit_tag _U_, tvbuff_t *tvb _U_, int offset _U_, asn1_ctx_t *actx _U_, proto_tree *tree _U_, int hf_index _U_) {
+dissect_pkinit_PKAuthenticator(gboolean implicit_tag _U_, tvbuff_t* tvb _U_, int offset _U_, asn1_ctx_t* actx _U_, proto_tree* tree _U_, int hf_index _U_) {
 #line 17 "./asn1/pkinit/pkinit.cnf"
-	if (kerberos_is_win2k_pkinit(actx) || isWin2k == 1) {
-		return dissect_pkinit_PKAuthenticator_Win2k(implicit_tag, tvb, offset, actx, tree, hf_index);
-	}
-  offset = dissect_ber_sequence(implicit_tag, actx, tree, tvb, offset,
-                                   PKAuthenticator_sequence, hf_index, ett_pkinit_PKAuthenticator);
+    if (kerberos_is_win2k_pkinit(actx) || isWin2k == 1) {
+        return dissect_pkinit_PKAuthenticator_Win2k(implicit_tag, tvb, offset, actx, tree, hf_index);
+    }
+    offset = dissect_ber_sequence(implicit_tag, actx, tree, tvb, offset,
+        PKAuthenticator_sequence, hf_index, ett_pkinit_PKAuthenticator);
 
 
 
 
-  return offset;
+    return offset;
 }
 
 
@@ -229,11 +248,11 @@ static const ber_sequence_t SEQUENCE_OF_AlgorithmIdentifier_sequence_of[1] = {
 };
 
 static int
-dissect_pkinit_SEQUENCE_OF_AlgorithmIdentifier(gboolean implicit_tag _U_, tvbuff_t *tvb _U_, int offset _U_, asn1_ctx_t *actx _U_, proto_tree *tree _U_, int hf_index _U_) {
-  offset = dissect_ber_sequence_of(implicit_tag, actx, tree, tvb, offset,
-                                      SEQUENCE_OF_AlgorithmIdentifier_sequence_of, hf_index, ett_pkinit_SEQUENCE_OF_AlgorithmIdentifier);
+dissect_pkinit_SEQUENCE_OF_AlgorithmIdentifier(gboolean implicit_tag _U_, tvbuff_t* tvb _U_, int offset _U_, asn1_ctx_t* actx _U_, proto_tree* tree _U_, int hf_index _U_) {
+    offset = dissect_ber_sequence_of(implicit_tag, actx, tree, tvb, offset,
+        SEQUENCE_OF_AlgorithmIdentifier_sequence_of, hf_index, ett_pkinit_SEQUENCE_OF_AlgorithmIdentifier);
 
-  return offset;
+    return offset;
 }
 
 
@@ -246,11 +265,11 @@ static const ber_sequence_t AuthPack_sequence[] = {
 };
 
 static int
-dissect_pkinit_AuthPack(gboolean implicit_tag _U_, tvbuff_t *tvb _U_, int offset _U_, asn1_ctx_t *actx _U_, proto_tree *tree _U_, int hf_index _U_) {
-  offset = dissect_ber_sequence(implicit_tag, actx, tree, tvb, offset,
-                                   AuthPack_sequence, hf_index, ett_pkinit_AuthPack);
+dissect_pkinit_AuthPack(gboolean implicit_tag _U_, tvbuff_t* tvb _U_, int offset _U_, asn1_ctx_t* actx _U_, proto_tree* tree _U_, int hf_index _U_) {
+    offset = dissect_ber_sequence(implicit_tag, actx, tree, tvb, offset,
+        AuthPack_sequence, hf_index, ett_pkinit_AuthPack);
 
-  return offset;
+    return offset;
 }
 
 
@@ -261,11 +280,11 @@ static const ber_sequence_t KRB5PrincipalName_sequence[] = {
 };
 
 static int
-dissect_pkinit_KRB5PrincipalName(gboolean implicit_tag _U_, tvbuff_t *tvb _U_, int offset _U_, asn1_ctx_t *actx _U_, proto_tree *tree _U_, int hf_index _U_) {
-  offset = dissect_ber_sequence(implicit_tag, actx, tree, tvb, offset,
-                                   KRB5PrincipalName_sequence, hf_index, ett_pkinit_KRB5PrincipalName);
+dissect_pkinit_KRB5PrincipalName(gboolean implicit_tag _U_, tvbuff_t* tvb _U_, int offset _U_, asn1_ctx_t* actx _U_, proto_tree* tree _U_, int hf_index _U_) {
+    offset = dissect_ber_sequence(implicit_tag, actx, tree, tvb, offset,
+        KRB5PrincipalName_sequence, hf_index, ett_pkinit_KRB5PrincipalName);
 
-  return offset;
+    return offset;
 }
 
 
@@ -282,12 +301,12 @@ static const ber_choice_t PaPkAsRep_choice[] = {
 };
 
 int
-dissect_pkinit_PaPkAsRep(gboolean implicit_tag _U_, tvbuff_t *tvb _U_, int offset _U_, asn1_ctx_t *actx _U_, proto_tree *tree _U_, int hf_index _U_) {
-  offset = dissect_ber_choice(actx, tree, tvb, offset,
-                                 PaPkAsRep_choice, hf_index, ett_pkinit_PaPkAsRep,
-                                 NULL);
+dissect_pkinit_PaPkAsRep(gboolean implicit_tag _U_, tvbuff_t* tvb _U_, int offset _U_, asn1_ctx_t* actx _U_, proto_tree* tree _U_, int hf_index _U_) {
+    offset = dissect_ber_choice(actx, tree, tvb, offset,
+        PaPkAsRep_choice, hf_index, ett_pkinit_PaPkAsRep,
+        NULL);
 
-  return offset;
+    return offset;
 }
 
 // Mine
@@ -297,10 +316,24 @@ static const ber_sequence_t PaPkAsRepConstructedType_sequence[] = {
   { NULL, 0, 0, 0, NULL }
 };
 
+static const ber_sequence_t PaPkAsRepConstructedType_pku2u_sequence[] = {
+  { &hf_pkinit_dhSignedData, BER_CLASS_CON, 0, 0, dissect_cms_SignedData },
+  { &hf_pkinit_dhNonce      , BER_CLASS_CON, 1, 0, dissect_pkinit_INTEGER },
+  { NULL, 0, 0, 0, NULL }
+};
+
 static int
 dissect_pkinit_PaPkAsRepConstructedTypeSequence(gboolean implicit_tag _U_, tvbuff_t* tvb _U_, int offset _U_, asn1_ctx_t* actx _U_, proto_tree* tree _U_, int hf_index _U_) {
-    offset = dissect_ber_sequence(implicit_tag, actx, tree, tvb, offset,
-        PaPkAsRepConstructedType_sequence, hf_index, ett_pkinit_KDCDHKeyInfo);
+    if (isPku2u == 0)
+    {
+        offset = dissect_ber_sequence(implicit_tag, actx, tree, tvb, offset,
+            PaPkAsRepConstructedType_pku2u_sequence, hf_index, ett_pkinit_KDCDHKeyInfo);
+    }
+    else
+    {
+        offset = dissect_ber_sequence(implicit_tag, actx, tree, tvb, offset,
+            PaPkAsRepConstructedType_sequence, hf_index, ett_pkinit_KDCDHKeyInfo);
+    }
 
     return offset;
 }
@@ -313,6 +346,17 @@ static const ber_choice_t PaPkAsRepConstructedType_choice[] = {
 
 int
 dissect_pkinit_PaPkAsRepConstructedType(gboolean implicit_tag _U_, tvbuff_t* tvb _U_, int offset _U_, asn1_ctx_t* actx _U_, proto_tree* tree _U_, int hf_index _U_) {
+    isPku2u = -1;
+    offset = dissect_ber_choice(actx, tree, tvb, offset,
+        PaPkAsRepConstructedType_choice, hf_index, ett_pkinit_PaPkAsRep,
+        NULL);
+
+    return offset;
+}
+
+int
+dissect_pkinit_PaPkAsRepConstructedType_pku2u(gboolean implicit_tag _U_, tvbuff_t* tvb _U_, int offset _U_, asn1_ctx_t* actx _U_, proto_tree* tree _U_, int hf_index _U_) {
+    isPku2u = 0;
     offset = dissect_ber_choice(actx, tree, tvb, offset,
         PaPkAsRepConstructedType_choice, hf_index, ett_pkinit_PaPkAsRep,
         NULL);
@@ -322,12 +366,12 @@ dissect_pkinit_PaPkAsRepConstructedType(gboolean implicit_tag _U_, tvbuff_t* tvb
 // End Mine
 
 static int
-dissect_pkinit_BIT_STRING(gboolean implicit_tag _U_, tvbuff_t *tvb _U_, int offset _U_, asn1_ctx_t *actx _U_, proto_tree *tree _U_, int hf_index _U_) {
-  offset = dissect_ber_bitstring(implicit_tag, actx, tree, tvb, offset,
-                                    NULL, 0, hf_index, -1,
-                                    NULL);
+dissect_pkinit_BIT_STRING(gboolean implicit_tag _U_, tvbuff_t* tvb _U_, int offset _U_, asn1_ctx_t* actx _U_, proto_tree* tree _U_, int hf_index _U_) {
+    offset = dissect_ber_bitstring(implicit_tag, actx, tree, tvb, offset,
+        NULL, 0, hf_index, -1,
+        NULL);
 
-  return offset;
+    return offset;
 }
 
 
@@ -339,21 +383,21 @@ static const ber_sequence_t KDCDHKeyInfo_sequence[] = {
 };
 
 static int
-dissect_pkinit_KDCDHKeyInfo(gboolean implicit_tag _U_, tvbuff_t *tvb _U_, int offset _U_, asn1_ctx_t *actx _U_, proto_tree *tree _U_, int hf_index _U_) {
-  offset = dissect_ber_sequence(implicit_tag, actx, tree, tvb, offset,
-                                   KDCDHKeyInfo_sequence, hf_index, ett_pkinit_KDCDHKeyInfo);
+dissect_pkinit_KDCDHKeyInfo(gboolean implicit_tag _U_, tvbuff_t* tvb _U_, int offset _U_, asn1_ctx_t* actx _U_, proto_tree* tree _U_, int hf_index _U_) {
+    offset = dissect_ber_sequence(implicit_tag, actx, tree, tvb, offset,
+        KDCDHKeyInfo_sequence, hf_index, ett_pkinit_KDCDHKeyInfo);
 
-  return offset;
+    return offset;
 }
 
 
 
 static int
-dissect_pkinit_INTEGER_M2147483648_2147483647(gboolean implicit_tag _U_, tvbuff_t *tvb _U_, int offset _U_, asn1_ctx_t *actx _U_, proto_tree *tree _U_, int hf_index _U_) {
-  offset = dissect_ber_integer(implicit_tag, actx, tree, tvb, offset, hf_index,
-                                                NULL);
+dissect_pkinit_INTEGER_M2147483648_2147483647(gboolean implicit_tag _U_, tvbuff_t* tvb _U_, int offset _U_, asn1_ctx_t* actx _U_, proto_tree* tree _U_, int hf_index _U_) {
+    offset = dissect_ber_integer(implicit_tag, actx, tree, tvb, offset, hf_index,
+        NULL);
 
-  return offset;
+    return offset;
 }
 
 
@@ -367,62 +411,62 @@ static const ber_sequence_t PKAuthenticator_Win2k_sequence[] = {
 };
 
 static int
-dissect_pkinit_PKAuthenticator_Win2k(gboolean implicit_tag _U_, tvbuff_t *tvb _U_, int offset _U_, asn1_ctx_t *actx _U_, proto_tree *tree _U_, int hf_index _U_) {
-  offset = dissect_ber_sequence(implicit_tag, actx, tree, tvb, offset,
-                                   PKAuthenticator_Win2k_sequence, hf_index, ett_pkinit_PKAuthenticator_Win2k);
+dissect_pkinit_PKAuthenticator_Win2k(gboolean implicit_tag _U_, tvbuff_t* tvb _U_, int offset _U_, asn1_ctx_t* actx _U_, proto_tree* tree _U_, int hf_index _U_) {
+    offset = dissect_ber_sequence(implicit_tag, actx, tree, tvb, offset,
+        PKAuthenticator_Win2k_sequence, hf_index, ett_pkinit_PKAuthenticator_Win2k);
 
-  return offset;
+    return offset;
 }
 
 
 static const ber_sequence_t PA_PK_AS_REQ_Win2k_sequence[] = {
   { &hf_pkinit_signed_auth_pack, BER_CLASS_CON, 0, 0, dissect_cms_ContentInfo },
   { &hf_pkinit_trusted_certifiers, BER_CLASS_CON, 2, BER_FLAGS_OPTIONAL, dissect_pkinit_SEQUENCE_OF_TrustedCA },
-  { &hf_pkinit_kdc_cert     , BER_CLASS_CON, 3, BER_FLAGS_OPTIONAL|BER_FLAGS_IMPLTAG, dissect_pkinit_OCTET_STRING },
-  { &hf_pkinit_encryption_cert, BER_CLASS_CON, 4, BER_FLAGS_OPTIONAL|BER_FLAGS_IMPLTAG, dissect_pkinit_OCTET_STRING },
+  { &hf_pkinit_kdc_cert     , BER_CLASS_CON, 3, BER_FLAGS_OPTIONAL | BER_FLAGS_IMPLTAG, dissect_pkinit_OCTET_STRING },
+  { &hf_pkinit_encryption_cert, BER_CLASS_CON, 4, BER_FLAGS_OPTIONAL | BER_FLAGS_IMPLTAG, dissect_pkinit_OCTET_STRING },
   { NULL, 0, 0, 0, NULL }
 };
 
 int
-dissect_pkinit_PA_PK_AS_REQ_Win2k(gboolean implicit_tag _U_, tvbuff_t *tvb _U_, int offset _U_, asn1_ctx_t *actx _U_, proto_tree *tree _U_, int hf_index _U_) {
-  isWin2k = 1;
-  offset = dissect_ber_sequence(implicit_tag, actx, tree, tvb, offset,
-                                   PA_PK_AS_REQ_Win2k_sequence, hf_index, ett_pkinit_PA_PK_AS_REQ_Win2k);
+dissect_pkinit_PA_PK_AS_REQ_Win2k(gboolean implicit_tag _U_, tvbuff_t* tvb _U_, int offset _U_, asn1_ctx_t* actx _U_, proto_tree* tree _U_, int hf_index _U_) {
+    isWin2k = 1;
+    offset = dissect_ber_sequence(implicit_tag, actx, tree, tvb, offset,
+        PA_PK_AS_REQ_Win2k_sequence, hf_index, ett_pkinit_PA_PK_AS_REQ_Win2k);
 
-  return offset;
+    return offset;
 }
 
 
 
 int
-dissect_pkinit_PA_PK_AS_REP_Win2k(gboolean implicit_tag _U_, tvbuff_t *tvb _U_, int offset _U_, asn1_ctx_t *actx _U_, proto_tree *tree _U_, int hf_index _U_) {
-  offset = dissect_pkinit_PaPkAsRep(implicit_tag, tvb, offset, actx, tree, hf_index);
+dissect_pkinit_PA_PK_AS_REP_Win2k(gboolean implicit_tag _U_, tvbuff_t* tvb _U_, int offset _U_, asn1_ctx_t* actx _U_, proto_tree* tree _U_, int hf_index _U_) {
+    offset = dissect_pkinit_PaPkAsRep(implicit_tag, tvb, offset, actx, tree, hf_index);
 
-  return offset;
+    return offset;
 }
 
 /*--- PDUs ---*/
 
-static int dissect_AuthPack_PDU(tvbuff_t *tvb _U_, packet_info *pinfo _U_, proto_tree *tree _U_, void *data _U_) {
-  int offset = 0;
-  asn1_ctx_t asn1_ctx;
-  asn1_ctx_init(&asn1_ctx, ASN1_ENC_BER, TRUE, pinfo);
-  offset = dissect_pkinit_AuthPack(FALSE, tvb, offset, &asn1_ctx, tree, hf_pkinit_AuthPack_PDU);
-  return offset;
+static int dissect_AuthPack_PDU(tvbuff_t* tvb _U_, packet_info* pinfo _U_, proto_tree* tree _U_, void* data _U_) {
+    int offset = 0;
+    asn1_ctx_t asn1_ctx;
+    asn1_ctx_init(&asn1_ctx, ASN1_ENC_BER, TRUE, pinfo);
+    offset = dissect_pkinit_AuthPack(FALSE, tvb, offset, &asn1_ctx, tree, hf_pkinit_AuthPack_PDU);
+    return offset;
 }
-static int dissect_KRB5PrincipalName_PDU(tvbuff_t *tvb _U_, packet_info *pinfo _U_, proto_tree *tree _U_, void *data _U_) {
-  int offset = 0;
-  asn1_ctx_t asn1_ctx;
-  asn1_ctx_init(&asn1_ctx, ASN1_ENC_BER, TRUE, pinfo);
-  offset = dissect_pkinit_KRB5PrincipalName(FALSE, tvb, offset, &asn1_ctx, tree, hf_pkinit_KRB5PrincipalName_PDU);
-  return offset;
+static int dissect_KRB5PrincipalName_PDU(tvbuff_t* tvb _U_, packet_info* pinfo _U_, proto_tree* tree _U_, void* data _U_) {
+    int offset = 0;
+    asn1_ctx_t asn1_ctx;
+    asn1_ctx_init(&asn1_ctx, ASN1_ENC_BER, TRUE, pinfo);
+    offset = dissect_pkinit_KRB5PrincipalName(FALSE, tvb, offset, &asn1_ctx, tree, hf_pkinit_KRB5PrincipalName_PDU);
+    return offset;
 }
-static int dissect_KDCDHKeyInfo_PDU(tvbuff_t *tvb _U_, packet_info *pinfo _U_, proto_tree *tree _U_, void *data _U_) {
-  int offset = 0;
-  asn1_ctx_t asn1_ctx;
-  asn1_ctx_init(&asn1_ctx, ASN1_ENC_BER, TRUE, pinfo);
-  offset = dissect_pkinit_KDCDHKeyInfo(FALSE, tvb, offset, &asn1_ctx, tree, hf_pkinit_KDCDHKeyInfo_PDU);
-  return offset;
+static int dissect_KDCDHKeyInfo_PDU(tvbuff_t* tvb _U_, packet_info* pinfo _U_, proto_tree* tree _U_, void* data _U_) {
+    int offset = 0;
+    asn1_ctx_t asn1_ctx;
+    asn1_ctx_init(&asn1_ctx, ASN1_ENC_BER, TRUE, pinfo);
+    offset = dissect_pkinit_KDCDHKeyInfo(FALSE, tvb, offset, &asn1_ctx, tree, hf_pkinit_KDCDHKeyInfo_PDU);
+    return offset;
 }
 
 
@@ -430,212 +474,212 @@ static int dissect_KDCDHKeyInfo_PDU(tvbuff_t *tvb _U_, packet_info *pinfo _U_, p
 #line 43 "./asn1/pkinit/packet-pkinit-template.c"
 
 int
-dissect_pkinit_PA_PK_AS_REQ(proto_tree *tree, tvbuff_t *tvb, int offset, asn1_ctx_t *actx _U_) {
-  offset = dissect_pkinit_PaPkAsReq(FALSE, tvb, offset, actx, tree, -1);
-  return offset;
+dissect_pkinit_PA_PK_AS_REQ(proto_tree* tree, tvbuff_t* tvb, int offset, asn1_ctx_t* actx _U_) {
+    offset = dissect_pkinit_PaPkAsReq(FALSE, tvb, offset, actx, tree, -1);
+    return offset;
 }
 
 int
-dissect_pkinit_PA_PK_AS_REP(proto_tree *tree, tvbuff_t *tvb, int offset, asn1_ctx_t *actx _U_) {
-  offset = dissect_pkinit_PaPkAsRep(FALSE, tvb, offset, actx, tree, -1);
-  return offset;
+dissect_pkinit_PA_PK_AS_REP(proto_tree* tree, tvbuff_t* tvb, int offset, asn1_ctx_t* actx _U_) {
+    offset = dissect_pkinit_PaPkAsRep(FALSE, tvb, offset, actx, tree, -1);
+    return offset;
 }
 
 static int
-dissect_KerberosV5Spec2_KerberosTime(gboolean implicit_tag _U_, tvbuff_t *tvb, int offset, asn1_ctx_t *actx, proto_tree *tree, int hf_index _U_) {
-  offset = dissect_krb5_ctime(tree, tvb, offset, actx);
-  return offset;
+dissect_KerberosV5Spec2_KerberosTime(gboolean implicit_tag _U_, tvbuff_t* tvb, int offset, asn1_ctx_t* actx, proto_tree* tree, int hf_index _U_) {
+    offset = dissect_krb5_ctime(tree, tvb, offset, actx);
+    return offset;
 }
 
 static int
-dissect_KerberosV5Spec2_Realm(gboolean implicit_tag _U_, tvbuff_t *tvb, int offset, asn1_ctx_t *actx, proto_tree *tree, int hf_index _U_) {
-  offset = dissect_krb5_realm(tree, tvb, offset, actx);
-  return offset;
+dissect_KerberosV5Spec2_Realm(gboolean implicit_tag _U_, tvbuff_t* tvb, int offset, asn1_ctx_t* actx, proto_tree* tree, int hf_index _U_) {
+    offset = dissect_krb5_realm(tree, tvb, offset, actx);
+    return offset;
 }
 
 static int
-dissect_KerberosV5Spec2_PrincipalName(gboolean implicit_tag _U_, tvbuff_t *tvb, int offset, asn1_ctx_t *actx, proto_tree *tree, int hf_index _U_) {
-  offset = dissect_krb5_cname(tree, tvb, offset, actx);
-  return offset;
+dissect_KerberosV5Spec2_PrincipalName(gboolean implicit_tag _U_, tvbuff_t* tvb, int offset, asn1_ctx_t* actx, proto_tree* tree, int hf_index _U_) {
+    offset = dissect_krb5_cname(tree, tvb, offset, actx);
+    return offset;
 }
 
 
 /*--- proto_register_pkinit ----------------------------------------------*/
 void proto_register_pkinit(void) {
 
-  /* List of fields */
-  static hf_register_info hf[] = {
+    /* List of fields */
+    static hf_register_info hf[] = {
 
-/*--- Included file: packet-pkinit-hfarr.c ---*/
-#line 1 "./asn1/pkinit/packet-pkinit-hfarr.c"
-    { &hf_pkinit_AuthPack_PDU,
-      { "AuthPack", "pkinit.AuthPack_element",
-        FT_NONE, BASE_NONE, NULL, 0,
-        NULL, HFILL }},
-    { &hf_pkinit_KRB5PrincipalName_PDU,
-      { "KRB5PrincipalName", "pkinit.KRB5PrincipalName_element",
-        FT_NONE, BASE_NONE, NULL, 0,
-        NULL, HFILL }},
-    { &hf_pkinit_KDCDHKeyInfo_PDU,
-      { "KDCDHKeyInfo", "pkinit.KDCDHKeyInfo_element",
-        FT_NONE, BASE_NONE, NULL, 0,
-        NULL, HFILL }},
-    { &hf_pkinit_signedAuthPack,
-      { "signedAuthPack", "pkinit.signedAuthPack_element",
-        FT_NONE, BASE_NONE, NULL, 0,
-        "ContentInfo", HFILL }},
-    { &hf_pkinit_trustedCertifiers,
-      { "trustedCertifiers", "pkinit.trustedCertifiers",
-        FT_UINT32, BASE_DEC, NULL, 0,
-        "SEQUENCE_OF_TrustedCA", HFILL }},
-    { &hf_pkinit_trustedCertifiers_item,
-      { "TrustedCA", "pkinit.TrustedCA",
-        FT_UINT32, BASE_DEC, VALS(pkinit_TrustedCA_vals), 0,
-        NULL, HFILL }},
-    { &hf_pkinit_kdcCert,
-      { "kdcCert", "pkinit.kdcCert_element",
-        FT_NONE, BASE_NONE, NULL, 0,
-        "IssuerAndSerialNumber", HFILL }},
-    { &hf_pkinit_caName,
-      { "caName", "pkinit.caName",
-        FT_UINT32, BASE_DEC, NULL, 0,
-        "Name", HFILL }},
-    { &hf_pkinit_issuerAndSerial,
-      { "issuerAndSerial", "pkinit.issuerAndSerial_element",
-        FT_NONE, BASE_NONE, NULL, 0,
-        "IssuerAndSerialNumber", HFILL }},
-    { &hf_pkinit_pkAuthenticator,
-      { "pkAuthenticator", "pkinit.pkAuthenticator_element",
-        FT_NONE, BASE_NONE, NULL, 0,
-        NULL, HFILL }},
-    { &hf_pkinit_clientPublicValue,
-      { "clientPublicValue", "pkinit.clientPublicValue_element",
-        FT_NONE, BASE_NONE, NULL, 0,
-        "SubjectPublicKeyInfo", HFILL }},
-    { &hf_pkinit_supportedCMSTypes,
-      { "supportedCMSTypes", "pkinit.supportedCMSTypes",
-        FT_UINT32, BASE_DEC, NULL, 0,
-        "SEQUENCE_OF_AlgorithmIdentifier", HFILL }},
-    { &hf_pkinit_supportedCMSTypes_item,
-      { "AlgorithmIdentifier", "pkinit.AlgorithmIdentifier_element",
-        FT_NONE, BASE_NONE, NULL, 0,
-        NULL, HFILL }},
-    { &hf_pkinit_clientDHNonce,
-      { "clientDHNonce", "pkinit.clientDHNonce",
-        FT_BYTES, BASE_NONE, NULL, 0,
-        "DHNonce", HFILL }},
-    { &hf_pkinit_cusec,
-      { "cusec", "pkinit.cusec",
-        FT_INT32, BASE_DEC, NULL, 0,
-        "INTEGER", HFILL }},
-    { &hf_pkinit_ctime,
-      { "ctime", "pkinit.ctime_element",
-        FT_NONE, BASE_NONE, NULL, 0,
-        "KerberosTime", HFILL }},
-    { &hf_pkinit_paNonce,
-      { "nonce", "pkinit.nonce",
-        FT_UINT32, BASE_DEC, NULL, 0,
-        "INTEGER_0_4294967295", HFILL }},
-    { &hf_pkinit_paChecksum,
-      { "paChecksum", "pkinit.paChecksum",
-        FT_BYTES, BASE_NONE, NULL, 0,
-        "OCTET_STRING", HFILL }},
-    { &hf_pkinit_realm,
-      { "realm", "pkinit.realm_element",
-        FT_NONE, BASE_NONE, NULL, 0,
-        NULL, HFILL }},
-    { &hf_pkinit_principalName,
-      { "principalName", "pkinit.principalName_element",
-        FT_NONE, BASE_NONE, NULL, 0,
-        NULL, HFILL }},
-    { &hf_pkinit_dhSignedData,
-      { "dhSignedData", "pkinit.dhSignedData_element",
-        FT_NONE, BASE_NONE, NULL, 0,
-        "ContentInfo", HFILL }},
-    { &hf_pkinit_encKeyPack,
-      { "encKeyPack", "pkinit.encKeyPack_element",
-        FT_NONE, BASE_NONE, NULL, 0,
-        "ContentInfo", HFILL }},
-    { &hf_pkinit_subjectPublicKey,
-      { "subjectPublicKey", "pkinit.subjectPublicKey",
-        FT_BYTES, BASE_NONE, NULL, 0,
-        "BIT_STRING", HFILL }},
-    { &hf_pkinit_dhNonce,
-      { "nonce", "pkinit.nonce",
-        FT_INT32, BASE_DEC, NULL, 0,
-        "INTEGER", HFILL }},
-    { &hf_pkinit_dhKeyExpiration,
-      { "dhKeyExpiration", "pkinit.dhKeyExpiration_element",
-        FT_NONE, BASE_NONE, NULL, 0,
-        "KerberosTime", HFILL }},
-    { &hf_pkinit_kdcName,
-      { "kdcName", "pkinit.kdcName_element",
-        FT_NONE, BASE_NONE, NULL, 0,
-        "PrincipalName", HFILL }},
-    { &hf_pkinit_kdcRealm,
-      { "kdcRealm", "pkinit.kdcRealm_element",
-        FT_NONE, BASE_NONE, NULL, 0,
-        "Realm", HFILL }},
-    { &hf_pkinit_cusecWin2k,
-      { "cusec", "pkinit.cusec",
-        FT_UINT32, BASE_DEC, NULL, 0,
-        "INTEGER_0_4294967295", HFILL }},
-    { &hf_pkinit_paNonceWin2k,
-      { "nonce", "pkinit.nonce",
-        FT_INT32, BASE_DEC, NULL, 0,
-        "INTEGER_M2147483648_2147483647", HFILL }},
-    { &hf_pkinit_signed_auth_pack,
-      { "signed-auth-pack", "pkinit.signed_auth_pack_element",
-        FT_NONE, BASE_NONE, NULL, 0,
-        "ContentInfo", HFILL }},
-    { &hf_pkinit_trusted_certifiers,
-      { "trusted-certifiers", "pkinit.trusted_certifiers",
-        FT_UINT32, BASE_DEC, NULL, 0,
-        "SEQUENCE_OF_TrustedCA", HFILL }},
-    { &hf_pkinit_trusted_certifiers_item,
-      { "TrustedCA", "pkinit.TrustedCA",
-        FT_UINT32, BASE_DEC, VALS(pkinit_TrustedCA_vals), 0,
-        NULL, HFILL }},
-    { &hf_pkinit_kdc_cert,
-      { "kdc-cert", "pkinit.kdc_cert",
-        FT_BYTES, BASE_NONE, NULL, 0,
-        "OCTET_STRING", HFILL }},
-    { &hf_pkinit_encryption_cert,
-      { "encryption-cert", "pkinit.encryption_cert",
-        FT_BYTES, BASE_NONE, NULL, 0,
-        "OCTET_STRING", HFILL }},
+        /*--- Included file: packet-pkinit-hfarr.c ---*/
+        #line 1 "./asn1/pkinit/packet-pkinit-hfarr.c"
+            { &hf_pkinit_AuthPack_PDU,
+              { "AuthPack", "pkinit.AuthPack_element",
+                FT_NONE, BASE_NONE, NULL, 0,
+                NULL, HFILL }},
+            { &hf_pkinit_KRB5PrincipalName_PDU,
+              { "KRB5PrincipalName", "pkinit.KRB5PrincipalName_element",
+                FT_NONE, BASE_NONE, NULL, 0,
+                NULL, HFILL }},
+            { &hf_pkinit_KDCDHKeyInfo_PDU,
+              { "KDCDHKeyInfo", "pkinit.KDCDHKeyInfo_element",
+                FT_NONE, BASE_NONE, NULL, 0,
+                NULL, HFILL }},
+            { &hf_pkinit_signedAuthPack,
+              { "signedAuthPack", "pkinit.signedAuthPack_element",
+                FT_NONE, BASE_NONE, NULL, 0,
+                "ContentInfo", HFILL }},
+            { &hf_pkinit_trustedCertifiers,
+              { "trustedCertifiers", "pkinit.trustedCertifiers",
+                FT_UINT32, BASE_DEC, NULL, 0,
+                "SEQUENCE_OF_TrustedCA", HFILL }},
+            { &hf_pkinit_trustedCertifiers_item,
+              { "TrustedCA", "pkinit.TrustedCA",
+                FT_UINT32, BASE_DEC, VALS(pkinit_TrustedCA_vals), 0,
+                NULL, HFILL }},
+            { &hf_pkinit_kdcCert,
+              { "kdcCert", "pkinit.kdcCert_element",
+                FT_NONE, BASE_NONE, NULL, 0,
+                "IssuerAndSerialNumber", HFILL }},
+            { &hf_pkinit_caName,
+              { "caName", "pkinit.caName",
+                FT_UINT32, BASE_DEC, NULL, 0,
+                "Name", HFILL }},
+            { &hf_pkinit_issuerAndSerial,
+              { "issuerAndSerial", "pkinit.issuerAndSerial_element",
+                FT_NONE, BASE_NONE, NULL, 0,
+                "IssuerAndSerialNumber", HFILL }},
+            { &hf_pkinit_pkAuthenticator,
+              { "pkAuthenticator", "pkinit.pkAuthenticator_element",
+                FT_NONE, BASE_NONE, NULL, 0,
+                NULL, HFILL }},
+            { &hf_pkinit_clientPublicValue,
+              { "clientPublicValue", "pkinit.clientPublicValue_element",
+                FT_NONE, BASE_NONE, NULL, 0,
+                "SubjectPublicKeyInfo", HFILL }},
+            { &hf_pkinit_supportedCMSTypes,
+              { "supportedCMSTypes", "pkinit.supportedCMSTypes",
+                FT_UINT32, BASE_DEC, NULL, 0,
+                "SEQUENCE_OF_AlgorithmIdentifier", HFILL }},
+            { &hf_pkinit_supportedCMSTypes_item,
+              { "AlgorithmIdentifier", "pkinit.AlgorithmIdentifier_element",
+                FT_NONE, BASE_NONE, NULL, 0,
+                NULL, HFILL }},
+            { &hf_pkinit_clientDHNonce,
+              { "clientDHNonce", "pkinit.clientDHNonce",
+                FT_BYTES, BASE_NONE, NULL, 0,
+                "DHNonce", HFILL }},
+            { &hf_pkinit_cusec,
+              { "cusec", "pkinit.cusec",
+                FT_INT32, BASE_DEC, NULL, 0,
+                "INTEGER", HFILL }},
+            { &hf_pkinit_ctime,
+              { "ctime", "pkinit.ctime_element",
+                FT_NONE, BASE_NONE, NULL, 0,
+                "KerberosTime", HFILL }},
+            { &hf_pkinit_paNonce,
+              { "nonce", "pkinit.nonce",
+                FT_UINT32, BASE_DEC, NULL, 0,
+                "INTEGER_0_4294967295", HFILL }},
+            { &hf_pkinit_paChecksum,
+              { "paChecksum", "pkinit.paChecksum",
+                FT_BYTES, BASE_NONE, NULL, 0,
+                "OCTET_STRING", HFILL }},
+            { &hf_pkinit_realm,
+              { "realm", "pkinit.realm_element",
+                FT_NONE, BASE_NONE, NULL, 0,
+                NULL, HFILL }},
+            { &hf_pkinit_principalName,
+              { "principalName", "pkinit.principalName_element",
+                FT_NONE, BASE_NONE, NULL, 0,
+                NULL, HFILL }},
+            { &hf_pkinit_dhSignedData,
+              { "dhSignedData", "pkinit.dhSignedData_element",
+                FT_NONE, BASE_NONE, NULL, 0,
+                "ContentInfo", HFILL }},
+            { &hf_pkinit_encKeyPack,
+              { "encKeyPack", "pkinit.encKeyPack_element",
+                FT_NONE, BASE_NONE, NULL, 0,
+                "ContentInfo", HFILL }},
+            { &hf_pkinit_subjectPublicKey,
+              { "subjectPublicKey", "pkinit.subjectPublicKey",
+                FT_BYTES, BASE_NONE, NULL, 0,
+                "BIT_STRING", HFILL }},
+            { &hf_pkinit_dhNonce,
+              { "nonce", "pkinit.nonce",
+                FT_INT32, BASE_DEC, NULL, 0,
+                "INTEGER", HFILL }},
+            { &hf_pkinit_dhKeyExpiration,
+              { "dhKeyExpiration", "pkinit.dhKeyExpiration_element",
+                FT_NONE, BASE_NONE, NULL, 0,
+                "KerberosTime", HFILL }},
+            { &hf_pkinit_kdcName,
+              { "kdcName", "pkinit.kdcName_element",
+                FT_NONE, BASE_NONE, NULL, 0,
+                "PrincipalName", HFILL }},
+            { &hf_pkinit_kdcRealm,
+              { "kdcRealm", "pkinit.kdcRealm_element",
+                FT_NONE, BASE_NONE, NULL, 0,
+                "Realm", HFILL }},
+            { &hf_pkinit_cusecWin2k,
+              { "cusec", "pkinit.cusec",
+                FT_UINT32, BASE_DEC, NULL, 0,
+                "INTEGER_0_4294967295", HFILL }},
+            { &hf_pkinit_paNonceWin2k,
+              { "nonce", "pkinit.nonce",
+                FT_INT32, BASE_DEC, NULL, 0,
+                "INTEGER_M2147483648_2147483647", HFILL }},
+            { &hf_pkinit_signed_auth_pack,
+              { "signed-auth-pack", "pkinit.signed_auth_pack_element",
+                FT_NONE, BASE_NONE, NULL, 0,
+                "ContentInfo", HFILL }},
+            { &hf_pkinit_trusted_certifiers,
+              { "trusted-certifiers", "pkinit.trusted_certifiers",
+                FT_UINT32, BASE_DEC, NULL, 0,
+                "SEQUENCE_OF_TrustedCA", HFILL }},
+            { &hf_pkinit_trusted_certifiers_item,
+              { "TrustedCA", "pkinit.TrustedCA",
+                FT_UINT32, BASE_DEC, VALS(pkinit_TrustedCA_vals), 0,
+                NULL, HFILL }},
+            { &hf_pkinit_kdc_cert,
+              { "kdc-cert", "pkinit.kdc_cert",
+                FT_BYTES, BASE_NONE, NULL, 0,
+                "OCTET_STRING", HFILL }},
+            { &hf_pkinit_encryption_cert,
+              { "encryption-cert", "pkinit.encryption_cert",
+                FT_BYTES, BASE_NONE, NULL, 0,
+                "OCTET_STRING", HFILL }},
 
-/*--- End of included file: packet-pkinit-hfarr.c ---*/
-#line 81 "./asn1/pkinit/packet-pkinit-template.c"
-  };
+                /*--- End of included file: packet-pkinit-hfarr.c ---*/
+                #line 81 "./asn1/pkinit/packet-pkinit-template.c"
+    };
 
-  /* List of subtrees */
-  static gint *ett[] = {
+    /* List of subtrees */
+    static gint* ett[] = {
 
-/*--- Included file: packet-pkinit-ettarr.c ---*/
-#line 1 "./asn1/pkinit/packet-pkinit-ettarr.c"
-    &ett_pkinit_PaPkAsReq,
-    &ett_pkinit_SEQUENCE_OF_TrustedCA,
-    &ett_pkinit_TrustedCA,
-    &ett_pkinit_AuthPack,
-    &ett_pkinit_SEQUENCE_OF_AlgorithmIdentifier,
-    &ett_pkinit_PKAuthenticator,
-    &ett_pkinit_KRB5PrincipalName,
-    &ett_pkinit_PaPkAsRep,
-    &ett_pkinit_KDCDHKeyInfo,
-    &ett_pkinit_PKAuthenticator_Win2k,
-    &ett_pkinit_PA_PK_AS_REQ_Win2k,
+        /*--- Included file: packet-pkinit-ettarr.c ---*/
+        #line 1 "./asn1/pkinit/packet-pkinit-ettarr.c"
+            & ett_pkinit_PaPkAsReq,
+            &ett_pkinit_SEQUENCE_OF_TrustedCA,
+            &ett_pkinit_TrustedCA,
+            &ett_pkinit_AuthPack,
+            &ett_pkinit_SEQUENCE_OF_AlgorithmIdentifier,
+            &ett_pkinit_PKAuthenticator,
+            &ett_pkinit_KRB5PrincipalName,
+            &ett_pkinit_PaPkAsRep,
+            &ett_pkinit_KDCDHKeyInfo,
+            &ett_pkinit_PKAuthenticator_Win2k,
+            &ett_pkinit_PA_PK_AS_REQ_Win2k,
 
-/*--- End of included file: packet-pkinit-ettarr.c ---*/
-#line 86 "./asn1/pkinit/packet-pkinit-template.c"
-  };
+            /*--- End of included file: packet-pkinit-ettarr.c ---*/
+            #line 86 "./asn1/pkinit/packet-pkinit-template.c"
+    };
 
-  /* Register protocol */
-  proto_pkinit = proto_register_protocol(PNAME, PSNAME, PFNAME);
+    /* Register protocol */
+    proto_pkinit = proto_register_protocol(PNAME, PSNAME, PFNAME);
 
-  /* Register fields and subtrees */
-  proto_register_field_array(proto_pkinit, hf, array_length(hf));
-  proto_register_subtree_array(ett, array_length(ett));
+    /* Register fields and subtrees */
+    proto_register_field_array(proto_pkinit, hf, array_length(hf));
+    proto_register_subtree_array(ett, array_length(ett));
 
 }
 
@@ -643,14 +687,13 @@ void proto_register_pkinit(void) {
 /*--- proto_reg_handoff_pkinit -------------------------------------------*/
 void proto_reg_handoff_pkinit(void) {
 
-/*--- Included file: packet-pkinit-dis-tab.c ---*/
+    /*--- Included file: packet-pkinit-dis-tab.c ---*/
 #line 1 "./asn1/pkinit/packet-pkinit-dis-tab.c"
-  register_ber_oid_dissector("1.3.6.1.5.2.3.1", dissect_AuthPack_PDU, proto_pkinit, "id-pkauthdata");
-  register_ber_oid_dissector("1.3.6.1.5.2.3.2", dissect_KDCDHKeyInfo_PDU, proto_pkinit, "id-pkdhkeydata");
-  register_ber_oid_dissector("1.3.6.1.5.2.2", dissect_KRB5PrincipalName_PDU, proto_pkinit, "id-pkinit-san");
+    register_ber_oid_dissector("1.3.6.1.5.2.3.1", dissect_AuthPack_PDU, proto_pkinit, "id-pkauthdata");
+    register_ber_oid_dissector("1.3.6.1.5.2.3.2", dissect_KDCDHKeyInfo_PDU, proto_pkinit, "id-pkdhkeydata");
+    register_ber_oid_dissector("1.3.6.1.5.2.2", dissect_KRB5PrincipalName_PDU, proto_pkinit, "id-pkinit-san");
 
 
-/*--- End of included file: packet-pkinit-dis-tab.c ---*/
+    /*--- End of included file: packet-pkinit-dis-tab.c ---*/
 #line 101 "./asn1/pkinit/packet-pkinit-template.c"
 }
-
